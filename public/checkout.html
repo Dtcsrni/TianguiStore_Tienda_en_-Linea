@@ -1,4 +1,4 @@
-<!-- 📁 checkout.html - Dirección y confirmación de pedido | TianguiStore -->
+<!-- 📁 checkout.html - Confirmación de pedido | TianguiStore -->
 <!DOCTYPE html>
 <html lang="es-MX">
 <head>
@@ -8,13 +8,10 @@
 
   <!-- MaterializeCSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet" />
-
   <!-- FontAwesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
-
   <!-- Google Material Icons -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-
   <!-- Estilos personalizados -->
   <link rel="stylesheet" href="estilo/main.css" />
 </head>
@@ -37,42 +34,50 @@
 
     <section class="row">
       <div class="col s12 m10 offset-m1 l8 offset-l2">
-        <div class="card grey darken-3 z-depth-3">
-          <div class="card-content">
-            <h2 class="card-title teal-text text-lighten-3">
-              <i class="fas fa-truck me-2"></i> Dirección de Envío
-            </h2>
+        <div class="formulario-wrapper glass-card">
+          <h2 class="intro-title">
+            <i class="fas fa-truck"></i> Dirección de Envío
+          </h2>
 
-            <form id="form-envio">
+          <form id="form-envio" autocomplete="on" novalidate>
 
-              <!-- Dirección -->
-              <div class="input-field">
-                <input id="direccion" name="direccion" type="text" class="validate white-text" required autocomplete="street-address" maxlength="255">
-                <label for="direccion">📍 Dirección completa</label>
-              </div>
+            <!-- Dirección -->
+            <div class="input-field">
+              <input id="direccion_entrega" name="direccion_entrega" type="text" class="validate white-text" required autocomplete="street-address" maxlength="255">
+              <label for="direccion_entrega">📍 Dirección completa</label>
+            </div>
 
-              <!-- Método de Pago -->
-              <div class="input-field">
-                <select id="metodo_pago" name="metodo_pago" class="browser-default white-text grey darken-4" required>
-                  <option value="" disabled selected>💳 Selecciona un método de pago</option>
-                  <option value="efectivo">Efectivo</option>
-                  <option value="tarjeta">Tarjeta de Crédito/Débito</option>
-                  <option value="transferencia">Transferencia Bancaria</option>
-                </select>
-              </div>
 
-              <!-- Comentarios -->
-              <div class="input-field">
-                <textarea id="comentarios" name="comentarios" class="materialize-textarea white-text" maxlength="300" placeholder="Instrucciones especiales, referencias o avisos."></textarea>
-                <label for="comentarios">📝 Comentarios adicionales (opcional)</label>
-              </div>
+            <!-- Método de Pago -->
+            <div class="input-field">
+              <select id="metodo_pago" name="metodo_pago" class="browser-default white-text grey darken-4" required>
+                <option value="" disabled selected>💳 Selecciona un método de pago</option>
+                <option value="efectivo">Efectivo</option>
+                <option value="tarjeta">Tarjeta de Crédito/Débito</option>
+                <option value="transferencia">Transferencia Bancaria</option>
+              </select>
+              <span class="helper-text amber-text text-lighten-3"></span>
+            </div>
 
-              <!-- Botón -->
-              <button type="submit" class="btn waves-effect teal darken-1 full-width">
-                <i class="material-icons left">check_circle</i> Realizar Pedido
-              </button>
-            </form>
-          </div>
+            <!-- Cupón -->
+            <div class="input-field">
+              <input id="cupon" name="cupon" type="text" class="validate white-text" maxlength="30" placeholder="Descuento promocional (opcional)">
+              <label for="cupon">🎟️ Código de cupón</label>
+              <span class="helper-text grey-text text-lighten-1">Máximo 30 caracteres</span>
+            </div>
+
+            <!-- Comentarios -->
+            <div class="input-field">
+              <textarea id="comentarios" name="comentarios" class="materialize-textarea white-text" maxlength="300" placeholder="Instrucciones especiales, referencias o avisos."></textarea>
+              <label for="comentarios">📝 Comentarios adicionales</label>
+              <span class="helper-text grey-text text-lighten-1">Opcional</span>
+            </div>
+
+            <!-- Botón -->
+            <button type="submit" class="btn waves-effect teal darken-1 full-width">
+              <i class="material-icons left">check_circle</i> Realizar Pedido
+            </button>
+          </form>
         </div>
       </div>
     </section>

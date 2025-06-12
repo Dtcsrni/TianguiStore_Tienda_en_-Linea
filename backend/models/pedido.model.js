@@ -35,13 +35,12 @@ async function obtenerMisPedidos(usuario_id) {
   );
   return rows;
 }
-
 async function crearPedidoConSP({
   usuario_id,
   total,
   metodo_pago,
   cupon = null,
-  direccion_envio = "",
+  direccion_entrega = "", // nombre correcto alineado con el controlador y frontend
   notas = "",
   productos = [],
 }) {
@@ -65,7 +64,7 @@ async function crearPedidoConSP({
         parseFloat(total),
         metodo_pago?.trim(),
         cupon,
-        direccion_envio.trim(),
+        direccion_entrega.trim(), // <- CORREGIDO aquí
         notas.trim(),
         productos_json,
       ]
@@ -75,17 +74,13 @@ async function crearPedidoConSP({
       resultado?.[0]?.pedido_id || resultado?.[0]?.[0]?.pedido_id || null;
 
     if (!pedido_id) {
-      throw new Error(
-        "⚠️ El procedimiento almacenado no devolvió un ID válido."
-      );
+      throw new Error("⚠️ El procedimiento almacenado no devolvió un ID válido.");
     }
 
     return pedido_id;
   } catch (error) {
     const mensajeOriginal =
-      error?.sqlMessage ||
-      error?.message ||
-      "Error desconocido al registrar pedido.";
+      error?.sqlMessage || error?.message || "Error desconocido al registrar pedido.";
     const sqlstate = error?.sqlState || null;
     const errno = error?.errno || null;
 
@@ -101,7 +96,7 @@ async function crearPedidoConSP({
       total,
       metodo_pago,
       cupon,
-      direccion_envio,
+      direccion_entrega, // <- también aquí, para consistencia en logs
       notas,
       productos: productos_sanitizados,
     };
@@ -110,7 +105,7 @@ async function crearPedidoConSP({
       `
       INSERT INTO auditoria_errores (
         fecha, modulo, procedimiento, usuario_id, datos_entrada,
-        sqlstate, mysql_errno, mensaje
+        \`sqlstate\`, mysql_errno, mensaje
       ) VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?)
     `,
       [
@@ -124,6 +119,7 @@ async function crearPedidoConSP({
       ]
     );
 
+
     const log_id = result.insertId;
 
     console.error("🛠️ [Pedido::Error Registrado]", {
@@ -136,6 +132,7 @@ async function crearPedidoConSP({
     throw new Error(`${mensajeUsuario.trim()} (ID error: #${log_id})`);
   }
 }
+
 
 async function actualizarEstadoPedido(pedido_id, estado_id) {
   await db.query(`UPDATE pedidos SET estado_id = ? WHERE pedido_id = ?`, [

@@ -1,60 +1,80 @@
 document.addEventListener("DOMContentLoaded", () => {
   const formEnvio = document.getElementById("form-envio");
-
   if (!formEnvio) return;
 
   formEnvio.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const direccion = document.getElementById("direccion").value.trim();
-    const metodo_pago = document.getElementById("metodo_pago").value;
-    const comentarios = document.getElementById("comentarios").value.trim();
+    const direccion_entrega = document.getElementById("direccion_entrega")?.value.trim();
+    const metodo_pago = document.getElementById("metodo_pago")?.value;
+    const comentarios = document.getElementById("comentarios")?.value.trim();
+    const cuponRaw = document.getElementById("cupon")?.value.trim();
+    const cupon = cuponRaw.length > 0 ? cuponRaw : undefined;
 
-    const carrito = JSON.parse(localStorage.getItem("carrito")) || [];
     const token = localStorage.getItem("token");
     const validado = localStorage.getItem("checkout_validado");
 
-    // Validaciones
-    if (!direccion || direccion.length < 5) {
-      M.toast({ html: "📍 Ingresa una dirección válida.", classes: "orange darken-2" });
-      return;
-    }
-
-    if (!metodo_pago) {
-      M.toast({ html: "💳 Selecciona un método de pago.", classes: "orange darken-2" });
-      return;
-    }
-
-    if (carrito.length === 0) {
-      M.toast({ html: "🛒 Tu carrito está vacío.", classes: "red darken-2" });
-      return;
-    }
-
     if (!token) {
-      M.toast({ html: "🔒 Debes iniciar sesión.", classes: "red darken-2" });
+      M.toast({ html: "🔒 Debes iniciar sesión para continuar.", classes: "red darken-2" });
       return;
     }
 
     if (validado !== "true") {
-      M.toast({ html: "⚠️ No se ha validado el stock. Vuelve al carrito y verifica antes de continuar.", classes: "orange darken-4" });
+      M.toast({ html: "⚠️ No se ha validado el stock. Regresa al carrito.", classes: "orange darken-4" });
       return;
     }
 
-    // Calcular total
-    const total = carrito.reduce((sum, p) => sum + (p.precio * p.cantidad), 0);
+    let carrito = [];
+    try {
+      carrito = JSON.parse(localStorage.getItem("carrito")) || [];
+    } catch (err) {
+      console.error("❌ Error al leer carrito:", err);
+      M.toast({ html: "Error al procesar el carrito.", classes: "red darken-3" });
+      return;
+    }
 
-    // Preparar productos
+    if (!Array.isArray(carrito) || carrito.length === 0) {
+      M.toast({ html: "🛒 Tu carrito está vacío.", classes: "red darken-2" });
+      return;
+    }
+
+    if (!direccion_entrega || direccion_entrega.length < 5 || direccion_entrega.length > 255) {
+      M.toast({ html: "📍 Dirección inválida (5-255 caracteres).", classes: "orange darken-2" });
+      return;
+    }
+
+    const metodosPermitidos = ["efectivo", "tarjeta", "transferencia", "codi", "paypal"];
+    if (!metodo_pago || !metodosPermitidos.includes(metodo_pago)) {
+      M.toast({ html: "💳 Método de pago no válido.", classes: "orange darken-2" });
+      return;
+    }
+
+    if (cupon && (typeof cupon !== "string" || cupon.length > 30)) {
+      M.toast({ html: "🎟️ El cupón debe ser un texto de máximo 30 caracteres.", classes: "orange darken-2" });
+      return;
+    }
+
     const productos = carrito.map(p => ({
       producto_id: p.id || p.producto_id,
-      cantidad: p.cantidad,
+      cantidad: parseInt(p.cantidad),
       precio_unitario: parseFloat(p.precio)
     }));
 
-    // Validación interna
-    if (productos.some(p => !p.producto_id || !p.cantidad || isNaN(p.precio_unitario))) {
+    if (productos.some(p => !p.producto_id || p.cantidad <= 0 || isNaN(p.precio_unitario))) {
       M.toast({ html: "❌ El carrito contiene productos inválidos.", classes: "red darken-3" });
       return;
     }
+
+    const total = productos.reduce((sum, p) => sum + p.precio_unitario * p.cantidad, 0);
+
+    const payload = {
+      direccion_entrega,
+      metodo_pago,
+      comentarios,
+      total,
+      productos
+    };
+    if (cupon) payload.cupon = cupon;
 
     try {
       const respuesta = await fetch("/pedidos", {
@@ -63,13 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${token}`
         },
-        body: JSON.stringify({
-          direccion_envio: direccion,
-          metodo_pago,
-          comentarios,
-          total,
-          productos
-        })
+        body: JSON.stringify(payload)
       });
 
       const resultado = await respuesta.json();
@@ -78,17 +92,29 @@ document.addEventListener("DOMContentLoaded", () => {
         M.toast({ html: "✅ Pedido realizado correctamente", classes: "teal darken-2" });
         localStorage.removeItem("carrito");
         localStorage.removeItem("checkout_validado");
-
-        setTimeout(() => {
-          window.location.href = "/misPedidos.html";
-        }, 1500);
+        setTimeout(() => window.location.href = "/misPedidos.html", 1500);
       } else {
-        const msg = resultado?.mensaje || "❌ Error inesperado del servidor.";
-        M.toast({ html: msg, classes: "red darken-3" });
+        if (Array.isArray(resultado?.errores)) {
+          console.group("❌ Errores de validación:");
+          resultado.errores.forEach(err => {
+            console.error(`• ${err.path}: ${err.msg}`);
+          });
+          console.groupEnd();
+          M.toast({ html: resultado.errores[0]?.msg || "❌ Error de validación", classes: "red darken-3" });
+        } else {
+          const [msgUsuario, msgTecnico] = (resultado?.mensaje || "").split("|||");
+          console.error("❌ Error del backend:", {
+            status: respuesta.status,
+            mensajeUsuario: msgUsuario,
+            mensajeTecnico: msgTecnico,
+            resultado
+          });
+          M.toast({ html: msgUsuario?.trim() || "❌ Error inesperado del servidor", classes: "red darken-3" });
+        }
       }
 
-    } catch (error) {
-      console.error("❌ Error al enviar pedido:", error);
+    } catch (err) {
+      console.error("❌ Error de red:", err);
       M.toast({ html: "❌ No se pudo conectar con el servidor.", classes: "red darken-3" });
     }
   });

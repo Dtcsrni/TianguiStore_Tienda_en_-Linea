@@ -2304,18 +2304,12 @@ DO
 -- Se valida la existencia del usuario, el total del pedido y la disponibilidad de stock.
 -- Si todo es correcto, se inserta el pedido y los detalles en la base de datos.
 -- En caso de error, se registra en la tabla de auditoría y se lanza una excepción.
+DELIMITER $$
 
-DROP PROCEDURE IF EXISTS sp_crear_pedido_completo;
-
-
-DELIMITER //
-
+DROP PROCEDURE IF EXISTS sp_crear_pedido_completo $$
 CREATE PROCEDURE sp_crear_pedido_completo(
   IN p_usuario_id INT,
   IN p_total DECIMAL(10,2),
-  IN p_metodo_pago ENUM('efectivo','tarjeta','transferencia','codi','paypal'),
-  IN p_cupon VARCHAR(30),
-  IN p_direccion_entrega TEXT,
   IN p_metodo_pago ENUM('efectivo','tarjeta','transferencia','codi','paypal'),
   IN p_cupon VARCHAR(30),
   IN p_direccion_entrega TEXT,
@@ -2323,6 +2317,7 @@ CREATE PROCEDURE sp_crear_pedido_completo(
   IN p_productos_json JSON
 )
 BEGIN
+  -- Variables
   DECLARE v_usuario_existe INT DEFAULT 0;
   DECLARE v_pedido_id INT;
   DECLARE v_index INT DEFAULT 0;
@@ -2332,95 +2327,73 @@ BEGIN
   DECLARE v_precio DECIMAL(10,2);
   DECLARE v_stock INT;
 
-  DECLARE msg_error_usuario TEXT DEFAULT NULL;
-  DECLARE msg_error_detalle TEXT DEFAULT NULL;
-  DECLARE msg_final TEXT;
-  DECLARE signal_msg VARCHAR(128);
-  DECLARE v_log_id INT;
+  -- Variables de error
   DECLARE v_sqlstate VARCHAR(10);
   DECLARE v_errno INT;
   DECLARE v_errmsg TEXT;
+  DECLARE v_log_id INT;
+  DECLARE v_signal_msg TEXT;
+  DECLARE v_limited_msg VARCHAR(128);
 
+  -- Manejador de errores
   DECLARE EXIT HANDLER FOR SQLEXCEPTION
   BEGIN
     GET DIAGNOSTICS CONDITION 1
       v_sqlstate = RETURNED_SQLSTATE,
       v_errno = MYSQL_ERRNO,
       v_errmsg = MESSAGE_TEXT;
-    SET v_errmsg = LEFT(v_errmsg, 255);
+
     ROLLBACK;
+
     INSERT INTO auditoria_errores (
       modulo, procedimiento, usuario_id, datos_entrada,
-      `sqlstate`, `mysql_errno`, `mensaje`
-      modulo, procedimiento, usuario_id, datos_entrada,
-      `sqlstate`, `mysql_errno`, `mensaje`
+      estado_sql, codigo_error, mensaje_error
     ) VALUES (
-      'pedidos',
-      'sp_crear_pedido_completo',
-      p_usuario_id,
+      'pedidos', 'sp_crear_pedido_completo', p_usuario_id,
       JSON_OBJECT(
         'total', p_total,
         'metodo_pago', p_metodo_pago,
         'cupon', p_cupon,
         'direccion_entrega', p_direccion_entrega,
-        'direccion_entrega', p_direccion_entrega,
         'notas', p_notas,
         'productos', p_productos_json
       ),
-      v_sqlstate,
-      v_errno,
-      v_errmsg
+      v_sqlstate, v_errno, v_errmsg
     );
+
     SET v_log_id = LAST_INSERT_ID();
-    SET msg_error_usuario = CONCAT('❌ No fue posible registrar tu pedido. Código de seguimiento: #ERR', LPAD(v_log_id, 6, '0'));
-    SET msg_error_detalle = CONCAT('[MySQL:', v_errno, '] ', v_errmsg, ' (log_id=', v_log_id, ')');
-    SET msg_error_detalle = CONCAT('[MySQL:', v_errno, '] ', v_errmsg, ' (log_id=', v_log_id, ')');
-    SET msg_final = CONCAT(msg_error_usuario, '|||', msg_error_detalle);
-    SET signal_msg = LEFT(msg_final, 128);
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = signal_msg;
+    SET v_signal_msg = CONCAT('ERR', LPAD(v_log_id, 6, '0'));
+    SET v_limited_msg = LEFT(v_signal_msg, 128);
+
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = v_limited_msg;
   END;
 
+  -- Validaciones
   SELECT COUNT(*) INTO v_usuario_existe
   FROM usuarios
   WHERE usuario_id = p_usuario_id AND activo = 1 AND borrado_logico = 0;
 
   IF v_usuario_existe = 0 THEN
-    SET msg_error_usuario = 'Tu cuenta no está activa o no es válida.';
-    SET msg_error_detalle = CONCAT('Usuario ID ', p_usuario_id, ' no encontrado o inactivo.');
-    SET msg_error_detalle = CONCAT('Usuario ID ', p_usuario_id, ' no encontrado o inactivo.');
-    SET msg_final = CONCAT(msg_error_usuario, '|||', msg_error_detalle);
-    SET signal_msg = LEFT(msg_final, 128);
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = signal_msg;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Usuario no válido o inactivo';
   END IF;
 
   IF p_total IS NULL OR p_total <= 0 THEN
-    SET msg_error_usuario = 'El total del pedido debe ser mayor a cero.';
-    SET msg_error_detalle = 'Valor total inválido o nulo.';
-    SET msg_error_detalle = 'Valor total inválido o nulo.';
-    SET msg_final = CONCAT(msg_error_usuario, '|||', msg_error_detalle);
-    SET signal_msg = LEFT(msg_final, 128);
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = signal_msg;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Total inválido o cero';
   END IF;
 
   SET v_total_items = JSON_LENGTH(p_productos_json);
   IF v_total_items IS NULL OR v_total_items = 0 THEN
-    SET msg_error_usuario = 'El pedido no contiene productos válidos.';
-    SET msg_error_usuario = 'El pedido no contiene productos válidos.';
-    SET msg_error_detalle = 'JSON vacío o malformado.';
-    SET msg_final = CONCAT(msg_error_usuario, '|||', msg_error_detalle);
-    SET signal_msg = LEFT(msg_final, 128);
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = signal_msg;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No hay productos válidos';
   END IF;
 
+  -- Transacción
   START TRANSACTION;
 
   INSERT INTO pedidos (
     usuario_id, estado_id, total, metodo_pago,
     cupon, direccion_entrega, notas, borrado_logico, fecha_pedido
-    cupon, direccion_entrega, notas, borrado_logico, fecha_pedido
   ) VALUES (
     p_usuario_id, 1, p_total, p_metodo_pago,
-    p_cupon, p_direccion_entrega, p_notas, 0, NOW()
     p_cupon, p_direccion_entrega, p_notas, 0, NOW()
   );
 
@@ -2430,53 +2403,36 @@ BEGIN
     SET v_producto_id = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_productos_json, CONCAT('$[', v_index, '].producto_id'))) AS UNSIGNED);
     SET v_cantidad = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_productos_json, CONCAT('$[', v_index, '].cantidad'))) AS UNSIGNED);
     SET v_precio = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_productos_json, CONCAT('$[', v_index, '].precio_unitario'))) AS DECIMAL(10,2));
-    SET v_cantidad = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_productos_json, CONCAT('$[', v_index, '].cantidad'))) AS UNSIGNED);
-    SET v_precio = CAST(JSON_UNQUOTE(JSON_EXTRACT(p_productos_json, CONCAT('$[', v_index, '].precio_unitario'))) AS DECIMAL(10,2));
 
     SELECT stock INTO v_stock FROM productos WHERE producto_id = v_producto_id;
 
     IF v_stock IS NULL THEN
-      SET msg_error_usuario = 'Un producto ya no está disponible.';
-      SET msg_error_detalle = CONCAT('Producto ID ', v_producto_id, ' no existe.');
-      SET msg_error_detalle = CONCAT('Producto ID ', v_producto_id, ' no existe.');
-      SET msg_final = CONCAT(msg_error_usuario, '|||', msg_error_detalle);
-      SET signal_msg = LEFT(msg_final, 128);
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = signal_msg;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Producto no existe';
     END IF;
 
     IF v_stock < v_cantidad THEN
-      SET msg_error_usuario = 'Stock insuficiente.';
-      SET msg_error_detalle = CONCAT('Producto ID ', v_producto_id, '. Requerido: ', v_cantidad, ', Disponible: ', v_stock);
-      SET msg_error_usuario = 'Stock insuficiente.';
-      SET msg_error_detalle = CONCAT('Producto ID ', v_producto_id, '. Requerido: ', v_cantidad, ', Disponible: ', v_stock);
-      SET msg_final = CONCAT(msg_error_usuario, '|||', msg_error_detalle);
-      SET signal_msg = LEFT(msg_final, 128);
-      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = signal_msg;
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Stock insuficiente';
     END IF;
 
     INSERT INTO detalle_pedido (
       pedido_id, producto_id, cantidad, precio_unitario,
       descuento_aplicado, iva_porcentaje
-      pedido_id, producto_id, cantidad, precio_unitario,
-      descuento_aplicado, iva_porcentaje
     ) VALUES (
       v_pedido_id, v_producto_id, v_cantidad, v_precio,
-      0.00, -- descuento por producto
-      16.00 -- IVA aplicable
-      v_pedido_id, v_producto_id, v_cantidad, v_precio,
-      0.00, -- descuento por producto
-      16.00 -- IVA aplicable
+      0.00, 16.00
     );
 
-    UPDATE productos SET stock = stock - v_cantidad WHERE producto_id = v_producto_id;
+    UPDATE productos
+    SET stock = stock - v_cantidad
+    WHERE producto_id = v_producto_id;
 
     SET v_index = v_index + 1;
   END WHILE;
 
   COMMIT;
+
   SELECT v_pedido_id AS pedido_id;
-END;
-//
+END $$
 
 DELIMITER ;
 

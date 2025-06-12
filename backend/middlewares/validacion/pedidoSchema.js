@@ -20,17 +20,17 @@ module.exports = checkSchema({
     },
     trim: true
   },
-  direccion_envio: {
-    in: ["body"],
-    isString: {
-      errorMessage: "La dirección de envío es obligatoria."
-    },
-    isLength: {
-      options: { min: 5, max: 255 },
-      errorMessage: "La dirección debe tener entre 5 y 255 caracteres."
-    },
-    trim: true
+direccion_entrega: {
+  in: ["body"],
+  isString: {
+    errorMessage: "La dirección de entrega es obligatoria."
   },
+  isLength: {
+    options: { min: 5, max: 255 },
+    errorMessage: "La dirección debe tener entre 5 y 255 caracteres."
+  },
+  trim: true
+},
   cupon: {
     in: ["body"],
     optional: true,
