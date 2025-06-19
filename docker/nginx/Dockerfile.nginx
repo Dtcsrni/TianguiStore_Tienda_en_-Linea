@@ -1,0 +1,37 @@
+###############################################################################
+# 🐳 TianguiStore – Dockerfile para NGINX con plantilla dinámica
+# -----------------------------------------------------------------------------
+# Este Dockerfile genera una imagen personalizada de NGINX que:
+# - Usa la imagen oficial `nginx:stable-alpine`
+# - Soporta plantillas dinámicas con variables de entorno
+# - Aplica `envsubst` automáticamente al inicio
+# - Corresponde con entradas señaladas en el docker-compose.yml
+###############################################################################
+
+# 🎯 1. Imagen base ligera y estable
+FROM nginx:stable-alpine
+
+# 🔧 2. Instalar herramientas necesarias (gettext para envsubst)
+RUN apk add --no-cache gettext bash
+
+# 🧭 3. Crear directorio para plantillas si no existe
+RUN mkdir -p /etc/nginx/templates
+
+# 🧱 4. Copiar plantilla de configuración (se generará default.conf en runtime)
+COPY default.conf.template /etc/nginx/templates/default.conf.template
+
+# ⚙️ 5. Copiar cualquier otro ajuste adicional si se requiere
+# (Por ej., SSL, módulos personalizados, favicon, html)
+# COPY extra.conf /etc/nginx/conf.d/extra.conf
+
+# 🔐 6. Exponer el puerto HTTP
+EXPOSE 80
+
+# 🚀 7. ENTRYPOINT que aplica envsubst y despliega NGINX en primer plano
+ENTRYPOINT ["/bin/sh", "-c", "\
+  echo '👉 Generando configuración de NGINX a partir de template…'; \
+  envsubst '$$NGINX_PORT $$NGINX_SERVER_NAME $$expires_cssjs $$cache_cssjs $$expires_img $$cache_img' \
+    < /etc/nginx/templates/default.conf.template \
+    > /etc/nginx/conf.d/default.conf; \
+  echo '✅ Config generada, iniciando NGINX…'; \
+  exec nginx -g 'daemon off;'"]

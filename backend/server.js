@@ -106,28 +106,38 @@ if (!IS_DEV) {
 //);
 
 // ─────────────────────────────────────────────────────────────
-// CONFIGURACIÓN DE HPP (HTTP PARAMETER POLLUTION) 🚫
+// 🔐 PROTECCIÓN CONTRA POLUCIÓN DE PARÁMETROS HTTP (HPP)
 // ─────────────────────────────────────────────────────────────
-app.use(hpp()); // Previene la contaminación de parámetros HTTP
+app.use(hpp()); // Previene ataques por duplicación de parámetros en query o body
 
 // ─────────────────────────────────────────────────────────────
-// CONFIGURACIÓN DE CORS PARA PERMITIR PETICIONES CRUZADAS 🌐
+// 🌐 CONFIGURACIÓN DE CORS (Cross-Origin Resource Sharing)
 // ─────────────────────────────────────────────────────────────
-//app.use(cors({ origin: IS_DEV ? "*" : (process.env.CORS_ORIGIN || "https://tutiendaonline.com") }));
+const cors = require("cors");
+const allowedOrigins = IS_DEV
+  ? "*" // En desarrollo, permitir todas las fuentes
+  : (process.env.CORS_ORIGIN || "https://tianguistore.mx");
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true, // Permitir cookies/sesiones si aplica
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
 
 // ─────────────────────────────────────────────────────────────
-// LEER JSON EN LAS PETICIONES 📄
+// 📄 PARSEADOR DE JSON EN CUERPOS DE PETICIÓN
 // ─────────────────────────────────────────────────────────────
-app.use(express.json()); // Permite manejar cuerpos JSON en las solicitudes
+app.use(express.json({ limit: "1mb" })); // Limitar tamaño para evitar ataques por payload
 
 // ─────────────────────────────────────────────────────────────
-// SERVIR ARCHIVOS ESTÁTICOS 🗂️
+// 📁 SERVIR ARCHIVOS ESTÁTICOS DESDE /public
 // ─────────────────────────────────────────────────────────────
 const PUBLIC_DIR = path.join(__dirname, "..", "public");
-app.use(express.static(PUBLIC_DIR)); // Servir archivos estáticos desde la carpeta public
+app.use(express.static(PUBLIC_DIR)); // Frontend estático con Materialize y JS puro
 
 // ─────────────────────────────────────────────────────────────
-// RUTAS DE LA API 📦
+// 📦 RUTAS DE LA API TIANGUISTORE
 // ─────────────────────────────────────────────────────────────
 app.use("/auth", require("./routes/auth.routes"));
 app.use("/productos", require("./routes/productos.routes"));
@@ -139,6 +149,9 @@ app.use("/marketing", require("./routes/marketing.routes"));
 app.use("/usuarios", require("./routes/usuarios.routes"));
 app.use("/configuracion", require("./routes/configuracion.routes"));
 app.use("/estadisticas", require("./routes/estadisticas.routes"));
+
+// (Recomendado) Ruta de prueba para healthcheck
+app.use("/api/test", require("./routes/test.routes"));
 
 // ─────────────────────────────────────────────────────────────
 // PÁGINAS PÚBLICAS Y RUTA 404 🔄

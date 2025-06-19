@@ -1,0 +1,74 @@
+###############################################################################
+# 🌐 NGINX | TianguiStore - Configuración por plantilla (usada por envsubst)
+# -----------------------------------------------------------------------------
+# Este archivo se transforma en runtime en default.conf mediante Dockerfile.nginx.
+# Variables como $NGINX_PORT o $cache_cssjs se sustituyen automáticamente.
+###############################################################################
+
+server {
+  listen       ${NGINX_PORT};
+  server_name  ${NGINX_SERVER_NAME};
+
+  # 📁 Carpeta de archivos estáticos (frontend con Materialize)
+  root /usr/share/nginx/html;
+  index index.html;
+
+  #############################################################################
+  # 🚪 RUTA PRINCIPAL | SPA fallback (para rutas como /carrito, /login, etc.)
+  #############################################################################
+  location / {
+    try_files $uri $uri/ /index.html;
+  }
+
+  #############################################################################
+  # 🔁 API | Redirección del frontend al backend Express vía reverse proxy
+  #############################################################################
+  location /api/ {
+    proxy_pass http://backend:3000;
+    proxy_http_version 1.1;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+
+    proxy_cache_bypass $http_upgrade;
+  }
+
+  #############################################################################
+  # 🎨 ASSETS ESTÁTICOS | Caché configurable por tipo de archivo
+  #############################################################################
+
+  # Archivos JS/CSS – caché corta (en días)
+  location ~* \.(css|js)$ {
+    expires ${expires_cssjs};
+    add_header Cache-Control "${cache_cssjs}";
+    access_log off;
+  }
+
+  # Imágenes y fuentes – caché larga (en días)
+  location ~* \.(png|jpg|jpeg|gif|ico|webp|svg|woff2?|ttf|eot)$ {
+    expires ${expires_img};
+    add_header Cache-Control "${cache_img}";
+    access_log off;
+  }
+
+  #############################################################################
+  # 🛡️ Seguridad básica | Cabeceras recomendadas
+  #############################################################################
+  add_header X-Frame-Options "SAMEORIGIN" always;
+  add_header X-XSS-Protection "1; mode=block" always;
+  add_header X-Content-Type-Options "nosniff" always;
+  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+  add_header Permissions-Policy "geolocation=*, camera=(self 'https://example.com'), microphone=()" always;
+
+  #############################################################################
+  # 🛑 Protección de archivos sensibles
+  #############################################################################
+  location ~ /\.(?!well-known).* {
+    deny all;
+  }
+}

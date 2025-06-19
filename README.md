@@ -1,122 +1,112 @@
-# 🛍️ TianguiStore – Plataforma Modular para Tiendas en Línea con Enfoque Educativo y Profesional
+# 🛍️ TianguiStore – Plataforma Modular para Tiendas en Línea
 
-**Repositorio oficial:** [github.com/Dtcsrni/TianguiStore_Tienda_en_-_Linea](https://github.com/Dtcsrni/TianguiStore_Tienda_en_-_Linea)  
-**Autor:** I.S.C. Erick Renato Vega Ceron
+**Repositorio oficial:** [github.com/Dtcsrni/TianguiStore\_Tienda\_en\_-\_Linea](https://github.com/Dtcsrni/TianguiStore_Tienda_en_-_Linea)
+**Autor:** I.S.C. Erick Renato Vega Cerón
+**Versión actual:** `v0.2 Beta`
 
 ---
 
 ## 🔍 ¿Qué es TianguiStore?
 
-**TianguiStore** es una tienda en línea adaptable, diseñada para servir tanto como herramienta educativa como base funcional para proyectos reales de comercio electrónico. Desarrollada con tecnologías modernas, su arquitectura modular facilita el aprendizaje práctico y la personalización para diversos sectores productivos.
+**TianguiStore** es una tienda en línea modular y autoconfigurable, orientada a brindar una base educativa, profesional y escalable para proyectos de comercio electrónico. Integra herramientas modernas como Docker, InfluxDB y Node.js, permitiendo tanto el despliegue local como en nube con mínima configuración.
 
-### Aplicaciones reales:
-- Comercio local y PyMEs
-- Cooperativas y productores independientes
-- Emprendimientos gastronómicos
-- Tesis universitarias y talleres escolares
-- Agencias de desarrollo que requieren una base lista para producción
+### 🏦 Aplicaciones reales:
 
----
-
-## ⚙️ Tecnologías utilizadas
-
-| Categoría       | Herramienta                      |
-|------------------|-----------------------------------|
-| Lenguaje         | JavaScript (ES6+)                 |
-| Backend          | Node.js + Express.js              |
-| Base de Datos    | MySQL / MariaDB (AMPPS recomendado) |
-| Frontend         | HTML + CSS + Bootstrap 5          |
-| Autenticación    | JWT + bcryptjs                    |
-| Validaciones     | express-validator + middlewares   |
-| Seguridad        | Helmet, HPP, CORS                 |
-| Herramientas     | Git + Visual Studio Code          |
-| API              | RESTful organizada por dominios   |
+* Comercio local y PyMEs
+* Cooperativas y productores independientes
+* Emprendimientos gastronómicos y artísticos
+* Tesis universitarias y formación técnica
+* Agencias de desarrollo y software freelance
 
 ---
 
-## 🚀 Estado actual: `v0.1 Alfa`
+## 📁 Tecnologías utilizadas
 
-### Funcionalidades implementadas:
-- Registro e inicio de sesión con JWT
-- Roles de usuario con control de permisos
-- Catálogo de productos dinámico
-- Carrito de compras por sesión autenticada
-- Gestión básica de pedidos con historial
-- Base de datos relacional documentada (SQL)
-- Validaciones robustas por esquema
-
----
-
-## 🧭 Próxima versión (`v0.2`)
-
-- Filtros y búsqueda por categoría y texto
-- Panel de administración contextual según rol
-- Gestión completa de usuarios, pedidos y productos
-- Personalización de configuración de tienda
-- Mejora estética general con componentes reutilizables
+| Categoría      | Herramienta                      |
+| -------------- | -------------------------------- |
+| Lenguaje       | JavaScript (ES6+), HTML, CSS     |
+| Backend        | Node.js + Express.js             |
+| Base de Datos  | MySQL 8.x / MariaDB              |
+| Time Series DB | InfluxDB 2.x                     |
+| Orquestación   | Docker + Docker Compose          |
+| Visualización  | Grafana (Dashboards integrables) |
+| Automatización | Node-RED (opcional)              |
+| Seguridad      | JWT, bcryptjs, Helmet, HPP, CORS |
+| API REST       | Modular por dominios funcionales |
+| Dev Tools      | Git, VSCode, Postman             |
 
 ---
 
-## ▶️ ¿Cómo ejecutar TianguiStore localmente?
+## 🚀 Características actuales (`v0.2 Beta`)
 
-### Requisitos:
+* Autenticación robusta con Access y Refresh Tokens JWT
+* Roles diferenciados: cliente, vendedor y administrador
+* Catálogo interactivo y carrito por sesión autenticada
+* Historial de pedidos con flujo de estados
+* Dashboard de eventos basado en InfluxDB y Grafana
+* Registro automático de actividad de usuarios y endpoints
+* Validaciones y middleware por capa de negocio
 
-- Node.js 18 o superior
-- AMPPS (Apache + MySQL + PHP + Softaculous)
-- Git
-- Navegador moderno
+---
 
-### Instrucciones:
+## 🌐 Despliegue rápido con Docker Compose
+
+### 📅 Requisitos:
+
+* Docker Desktop (Windows/Mac/Linux)
+* Docker Compose V2 o superior
+* Git
+
+### 🔄 Clona y levanta la plataforma:
 
 ```bash
 git clone https://github.com/Dtcsrni/TianguiStore_Tienda_en_-_Linea.git
 cd TianguiStore_Tienda_en_-_Linea
-npm install
+docker compose up -d
 ```
 
-Luego, crea un archivo `.env` en `backend/` con los siguientes datos:
+### 🔢 Accesos por puerto local:
 
-```env
-PORT=3000
-DB_HOST=localhost
-DB_USER=root
-DB_PASS=
-DB_NAME=tianguistore
-JWT_SECRET=miclaveultrasecreta
-```
+| Servicio    | URL                                            |
+| ----------- | ---------------------------------------------- |
+| Backend API | [http://localhost:3000](http://localhost:3000) |
+| InfluxDB    | [http://localhost:8086](http://localhost:8086) |
+| Grafana     | [http://localhost:3000](http://localhost:3000) |
+| Node-RED    | [http://localhost:1880](http://localhost:1880) |
+| MySQL       | localhost:3306 (externo)                       |
 
-Importa el archivo `estructura_completa_tienda_db.sql` desde AMPPS (usando phpMyAdmin o consola MySQL).
-
-Después, ejecuta el servidor:
-
-```bash
-node backend/server.js
-```
-
-Abre `public/index.html` directamente o utilizando una extensión como Live Server en VSCode.
+> Requiere archivo `.env` preconfigurado. Ejemplo incluido en el repositorio.
 
 ---
 
-## 💬 ¿Deseas personalizar TianguiStore?
+## 🔬 Monitoreo y Trazabilidad
 
-- Puedes adaptarlo fácilmente para clientes reales o proyectos de tesis.
-- Se ofrece licenciamiento profesional, instalación remota, branding personalizado y soporte extendido.
-
-📩 Contacto directo: **armsystechno@gmail.com**
-
----
-
-## 📄 Licencia
-
-- Uso educativo gratuito bajo licencia CC BY-NC-SA
-- Uso comercial solo mediante contrato formal con el autor
+* Eventos de usuario (vistas, clics, compras)
+* Latencia y uso de endpoints
+* Actividad por módulo y comportamiento del sistema
+* Compatible con alertas, paneles e IA predictiva
 
 ---
 
-## 🌟 ¿Te gusta el proyecto?
+## 🔧 Personalización y Escalabilidad
 
-- Dale ⭐ para apoyarlo
-- Haz Watch 👀 para recibir actualizaciones
-- Comparte con estudiantes, colegas o desarrolladores freelance
+* Componentes desacoplados para reemplazar UI, auth o DB
+* Plantillas de roles y rutas fácilmente adaptables
+* Posibilidad de migrar a microservicios por dominio
 
-> _“Hecho en México 🇲🇽 con visión ética, modularidad técnica y utilidad real para quienes venden con propósito.”_
+---
+
+## 🖋️ Contacto y soporte
+
+* Consultorías, licenciamiento o colaboraciones:
+  **[armsystechno@gmail.com](mailto:armsystechno@gmail.com)**
+
+---
+
+## 🌟 ¡Apóyalo!
+
+* Dale ⭐ si el proyecto te parece valioso
+* Comparte con otros desarrolladores, estudiantes o PyMEs
+* Síguelo para actualizaciones educativas y profesionales
+
+> *"Hecho en México 🇲🇽 con modularidad, consciencia y propósito."*

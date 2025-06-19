@@ -1,0 +1,212 @@
+###############################################################################
+# 📦 TIANGUISTORE | Docker Compose (Compose V2 – Esquema Moderno sin ‘version:’)
+# -----------------------------------------------------------------------------
+# Orquesta:
+# - Frontend Materialize + JS puro (NGINX)
+# - Backend Express.js + MySQL
+# - InfluxDB + Grafana (telemetría)
+# - Node‑RED (opcional)
+# - phpMyAdmin (admin web MySQL)
+#
+# 🔧 Por defecto: ENTORNO DE DESARROLLO (nodemon, volúmenes montados, hot reload)
+# Para producción: export NODE_ENV=production y relanzar los servicios
+###############################################################################
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: tianguistore-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: tienda_db
+      MYSQL_USER: admin_tianguistore
+      MYSQL_PASSWORD: tianguistore1234
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+    networks:
+      - tianguistore-net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      args:
+        NODE_ENV: ${NODE_ENV:-development}
+    image: tianguistore/backend:latest
+    container_name: tianguistore-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/home/appuser/app
+      - ./public:/home/appuser/public
+    working_dir: /home/appuser/app
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: admin_tianguistore
+      DB_PASSWORD: tianguistore1234
+      DB_NAME: tienda_db
+      JWT_SECRET: super_secreto
+      JWT_EXPIRES_IN: 1d
+      JWT_REFRESH_SECRET: super_refresh
+      JWT_REFRESH_EXPIRES_IN: 7d
+      FRONTEND_URL: http://localhost
+    command: >
+      sh -c "if [ \"$${NODE_ENV}\" = 'development' ]; then
+        npx nodemon server.js;
+      else
+        node server.js;
+      fi"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/test || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: on-failure
+    networks:
+      - tianguistore-net
+
+  nginx:
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile.nginx
+    image: tianguistore/nginx:latest
+    container_name: tianguistore-nginx
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+    environment:
+      NGINX_PORT: "80"
+      NGINX_SERVER_NAME: localhost
+      expires_cssjs: 7d
+      cache_cssjs: public
+      expires_img: 30d
+      cache_img: public
+    volumes:
+      - ./public:/usr/share/nginx/html:ro
+      - ./docker/nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+    entrypoint: >
+      /bin/sh -c "
+        envsubst '$$NGINX_PORT $$NGINX_SERVER_NAME $$expires_cssjs $$cache_cssjs $$expires_img $$cache_img' \
+        < /etc/nginx/templates/default.conf.template \
+        > /etc/nginx/conf.d/default.conf && exec nginx -g 'daemon off;'
+      "
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - tianguistore-net
+
+  influxdb:
+    image: influxdb:2.7
+    container_name: tianguistore-influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      DOCKER_INFLUXDB_INIT_MODE: setup
+      DOCKER_INFLUXDB_INIT_USERNAME: admin
+      DOCKER_INFLUXDB_INIT_PASSWORD: password123
+      DOCKER_INFLUXDB_INIT_ORG: tianguistore_org
+      DOCKER_INFLUXDB_INIT_BUCKET: metrics
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: token_muy_seguro
+    volumes:
+      - influxdb_data:/var/lib/influxdb2
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8086/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - tianguistore-net
+
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: tianguistore-grafana
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_LOG_LEVEL=warn     # 👈 Reduce verbosidad
+    volumes:
+      - grafana_data:/var/lib/grafana
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+    networks:
+      - tianguistore-net
+
+  nodered:
+    image: nodered/node-red:latest
+    container_name: tianguistore-nodered
+    ports:
+      - "1880:1880"
+    volumes:
+      - nodered_data:/data
+    restart: unless-stopped
+    networks:
+      - tianguistore-net
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: tianguistore-phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: rootpass
+      PMA_ABSOLUTE_URI: http://localhost:8080
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:80 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - tianguistore-net
+
+volumes:
+  mysql_data:
+  influxdb_data:
+  grafana_data:
+  nodered_data:
+
+networks:
+  tianguistore-net:
+    driver: bridge

@@ -1,0 +1,83 @@
+{
+  "name": "tianguistore",
+  "version": "0.3.1",
+  "description": "🛒 Plataforma modular de comercio electrónico para PyMEs mexicanas. Backend con Express 5.1 y Node.js ≥ 22, frontend Material Design con LESS, telemetría integrada con InfluxDB y arquitectura adaptable a desarrollo educativo o producción real.",
+  "type": "commonjs",
+  "main": "backend/server.js",
+
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dtcsrni/TianguiStore_Tienda_en_-_Linea.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Dtcsrni/TianguiStore_Tienda_en_-_Linea/issues"
+  },
+  "homepage": "https://github.com/Dtcsrni/TianguiStore_Tienda_en_-_Linea#readme",
+
+  "engines": {
+    "node": ">=22.0.0"
+  },
+
+  "scripts": {
+    "start": "NODE_ENV=production node backend/server.js",
+    "dev": "nodemon backend/server.js",
+    "build:css": "lessc public/estilo/main.less public/estilo/main.css",
+    "watch:css": "nodemon --watch public/estilo/main.less --exec \"npm run build:css\"",
+    "setup": "npm install && npm run install:materialize && npm run build:css",
+    "install:materialize": "npm install -D @materializecss/materialize less",
+    "update:check": "npm outdated",
+    "update:all": "npm update",
+    "lint": "eslint . --fix",
+    "format": "prettier --write .",
+    "install:progress": "node install-with-progress.js"
+  },
+
+  "keywords": [
+    "tianguistore",
+    "ecommerce",
+    "express",
+    "nodejs",
+    "materialize",
+    "less",
+    "grafana",
+    "influxdb",
+    "telemetría",
+    "pymes",
+    "México",
+    "educación",
+    "proyecto académico"
+  ],
+
+  "author": "I.S.C. Erick Renato Vega Ceron",
+  "license": "UNLICENSED-COMMERCIAL-DUAL",
+
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "busboy": "^1.6.0",
+    "chalk": "^4.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "express-validator": "^7.2.1",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.2",
+    "mysql2": "^3.14.1",
+    "ngrok": "^5.0.0-beta.2",
+    "nodemon": "^3.1.10",
+    "progress": "^2.0.3",
+    "validator": "^13.15.0"
+  },
+
+  "devDependencies": {
+    "@materializecss/materialize": "^2.2.2",
+    "eslint": "^9.26.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "less": "^4.3.0",
+    "prettier": "^3.5.3"
+  },
+
+  "sideEffects": false
+}
