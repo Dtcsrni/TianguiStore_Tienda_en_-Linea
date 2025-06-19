@@ -38,12 +38,17 @@ RUN if [ "${NODE_ENV}" = "development" ]; then \
 ###############################
 FROM node:20.9.0-bullseye-slim AS runner
 
-# Crea usuario non-root
+# 🧩 Instala curl para healthchecks en Docker
+RUN apt-get update && \
+    apt-get install -y curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# Crea usuario non-root seguro
 RUN useradd --user-group --shell /bin/false appuser
 
-# Crea carpeta de trabajo y asigna permisos
+# Configura entorno y copia desde la etapa de build
 WORKDIR /home/appuser/app
-COPY --from=builder /build .
+COPY --from=builder /build ./
 RUN chown -R appuser:appuser /home/appuser
 
 USER appuser
@@ -53,7 +58,7 @@ ENV PORT=${PORT:-3000}
 
 EXPOSE ${PORT}
 
-# Comando condicional según entorno
+# 🏁 Comando condicional de inicio
 CMD if [ "${NODE_ENV}" = "production" ]; then \
       node server.js; \
     else \
