@@ -131,7 +131,7 @@ services:
       DOCKER_INFLUXDB_INIT_PASSWORD: password123
       DOCKER_INFLUXDB_INIT_ORG: tianguistore_org
       DOCKER_INFLUXDB_INIT_BUCKET: metrics
-      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: token_muy_seguro
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: SIfM25CKG6sRcxbAtBlmIh722zboOEO1e2fAtd78gN3QwHKKctmypUMbiud8B5Ftv1ghTZ-RtiMNgVMi4t30kA==
     volumes:
       - influxdb_data:/var/lib/influxdb2
     healthcheck:

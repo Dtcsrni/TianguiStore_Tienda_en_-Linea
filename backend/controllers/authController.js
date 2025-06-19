@@ -15,12 +15,10 @@ const {
   verificarRefreshToken,
 } = require("../utils/jwt");
 
+const { registrarEvento } = require("../utils/telemetria");
+
 /**
  * ➕ REGISTRO DE NUEVO USUARIO
- * @route POST /auth/registro
- */
-/**
- * ➕ REGISTRO DE NUEVO USUARIO (EXTENDIDO)
  * @route POST /auth/registro
  */
 async function registrarUsuario(req, res) {
@@ -43,7 +41,6 @@ async function registrarUsuario(req, res) {
   } = req.body;
 
   try {
-    // 🔄 Mapeo frontend → backend del origen
     const mapaOrigen = {
       google: "externo",
       redes_sociales: "externo",
@@ -52,14 +49,11 @@ async function registrarUsuario(req, res) {
       recomendacion: "referido",
       otro: "externo",
     };
-    origen_reclutamiento =
-      mapaOrigen[origen_reclutamiento] || origen_reclutamiento;
+    origen_reclutamiento = mapaOrigen[origen_reclutamiento] || origen_reclutamiento;
 
-    // 🧾 Validaciones
     if (!correo_electronico || !contrasena || !nombre) {
       return res.status(400).json({
-        message:
-          "Faltan campos obligatorios: correo_electronico, contrasena o nombre.",
+        message: "Faltan campos obligatorios: correo_electronico, contrasena o nombre.",
       });
     }
 
@@ -86,11 +80,8 @@ async function registrarUsuario(req, res) {
       });
     }
 
-    // 🌐 Validación de URLs opcionales
     if (foto_perfil_url && !validator.isURL(foto_perfil_url)) {
-      return res
-        .status(400)
-        .json({ message: "URL de foto de perfil inválida." });
+      return res.status(400).json({ message: "URL de foto de perfil inválida." });
     }
     if (cv_url && !validator.isURL(cv_url)) {
       return res.status(400).json({ message: "URL de CV inválida." });
@@ -99,26 +90,16 @@ async function registrarUsuario(req, res) {
       return res.status(400).json({ message: "URL de portafolio inválida." });
     }
 
-    const origenesValidos = [
-      "externo",
-      "campaña",
-      "referido",
-      "fidelidad",
-      "interno",
-    ];
+    const origenesValidos = ["externo", "campaña", "referido", "fidelidad", "interno"];
     if (!origenesValidos.includes(origen_reclutamiento)) {
-      return res
-        .status(400)
-        .json({ message: "Origen de reclutamiento no válido." });
+      return res.status(400).json({ message: "Origen de reclutamiento no válido." });
     }
 
-    // 🔍 Verificación de duplicado
     const yaExiste = await usuarioModel.existeCorreo(correo_electronico);
     if (yaExiste) {
       return res.status(409).json({ message: "El correo ya está registrado." });
     }
 
-    // 🔐 Hash y registro
     const hash = await bcrypt.hash(contrasena, 10);
     await usuarioModel.crearUsuario({
       correo_electronico,
@@ -137,14 +118,34 @@ async function registrarUsuario(req, res) {
       origen_reclutamiento,
     });
 
-    return res
-      .status(201)
-      .json({ message: "Usuario registrado correctamente." });
+    registrarEvento("registro_usuario", 
+      {
+        exito: true,
+        longitud_nombre: nombre.length,
+        tiene_cv: !!cv_url,
+        tiene_portafolio: !!portafolio_url
+      },
+      {
+        origen: origen_reclutamiento,
+        genero,
+        correo: correo_electronico
+      }
+    );
+
+    return res.status(201).json({ message: "Usuario registrado correctamente." });
+
   } catch (error) {
     console.error("❌ Error en registrarUsuario:", error);
-    return res
-      .status(500)
-      .json({ message: "Error interno al registrar usuario." });
+
+    registrarEvento("registro_usuario", 
+      { exito: false },
+      {
+        origen: origen_reclutamiento || "desconocido",
+        correo: correo_electronico || "indefinido"
+      }
+    );
+
+    return res.status(500).json({ message: "Error interno al registrar usuario." });
   }
 }
 
@@ -156,63 +157,57 @@ async function verificarUsuario(req, res) {
   const { correo_electronico, contrasena } = req.body;
 
   if (!correo_electronico || !contrasena) {
-    return res
-      .status(400)
-      .json({ message: "Correo y contraseña son requeridos." });
+    return res.status(400).json({ message: "Correo y contraseña son requeridos." });
   }
 
   try {
-    const usuario =
-      await usuarioModel.buscarUsuarioPorCorreo(correo_electronico);
+    const usuario = await usuarioModel.buscarUsuarioPorCorreo(correo_electronico);
     if (!usuario) {
+      registrarEvento("inicio_sesion", { exito: false }, { correo: correo_electronico, motivo: "usuario_no_encontrado" });
       return res.status(401).json({ message: "Credenciales inválidas." });
     }
 
     const coincide = await bcrypt.compare(contrasena, usuario.contrasena_hash);
     if (!coincide) {
+      registrarEvento("inicio_sesion", { exito: false }, { correo: correo_electronico, motivo: "contrasena_incorrecta" });
       return res.status(401).json({ message: "Credenciales inválidas." });
     }
 
     let permisos = {};
     try {
-      const permisosRaw = await rolModel.obtenerPermisosPorRolId(
-        usuario.rol_id
-      );
-      if (typeof permisosRaw === "string") {
-        permisos = JSON.parse(permisosRaw || "{}");
-      } else if (typeof permisosRaw === "object" && permisosRaw !== null) {
-        permisos = permisosRaw;
-      } else {
-        throw new Error("Tipo de permisos inesperado");
-      }
+      const permisosRaw = await rolModel.obtenerPermisosPorRolId(usuario.rol_id);
+      permisos = typeof permisosRaw === "string" ? JSON.parse(permisosRaw || "{}") : permisosRaw;
     } catch (e) {
-      console.warn(
-        "⚠️ Permisos corruptos para rol_id:",
-        usuario.rol_id,
-        e.message
-      );
+      console.warn("⚠️ Permisos corruptos para rol_id:", usuario.rol_id, e.message);
     }
 
     const payload = {
       usuario_id: usuario.usuario_id,
       correo: usuario.correo_electronico,
-      nombre:
-        `${usuario.nombre} ${usuario.apellido_paterno || ""} ${usuario.apellido_materno || ""}`.trim(),
+      nombre: `${usuario.nombre} ${usuario.apellido_paterno || ""} ${usuario.apellido_materno || ""}`.trim(),
       rol: usuario.rol || "cliente",
       nivel: usuario.nivel || "Básico",
       fotoPerfil: usuario.foto_perfil_url || "/imagenes/default_profile.png",
       permisos,
     };
-    usuarioModel.actualizarAccesoUsuario(usuario.usuario_id);
+
+    await usuarioModel.actualizarAccesoUsuario(usuario.usuario_id);
+
+    registrarEvento("inicio_sesion", 
+      { exito: true },
+      { usuario_id: usuario.usuario_id.toString(), rol: usuario.rol, correo: correo_electronico }
+    );
+
     return res.status(200).json({
       message: "Inicio de sesión exitoso.",
       accessToken: generarAccessToken(payload),
       refreshToken: generarRefreshToken({ usuario_id: usuario.usuario_id }),
       usuario: payload,
     });
-    
+
   } catch (error) {
     console.error("❌ Error en verificarUsuario:", error);
+    registrarEvento("inicio_sesion", { exito: false }, { correo: correo_electronico, motivo: "error_servidor" });
     return res.status(500).json({ message: "Error al iniciar sesión." });
   }
 }
@@ -242,30 +237,18 @@ async function refrescarToken(req, res) {
 
   try {
     const decoded = verificarRefreshToken(refreshToken);
-
     const usuario = await usuarioModel.buscarUsuarioPorId(decoded.usuario_id);
     if (!usuario) {
+      registrarEvento("refrescar_token", { exito: false }, { motivo: "usuario_no_encontrado" });
       return res.status(401).json({ message: "Usuario no encontrado." });
     }
 
     let permisos = {};
     try {
-      const permisosRaw = await rolModel.obtenerPermisosPorRolId(
-        usuario.rol_id
-      );
-      if (typeof permisosRaw === "string") {
-        permisos = JSON.parse(permisosRaw || "{}");
-      } else if (typeof permisosRaw === "object" && permisosRaw !== null) {
-        permisos = permisosRaw;
-      } else {
-        throw new Error("Tipo de permisos inesperado");
-      }
+      const permisosRaw = await rolModel.obtenerPermisosPorRolId(usuario.rol_id);
+      permisos = typeof permisosRaw === "string" ? JSON.parse(permisosRaw || "{}") : permisosRaw;
     } catch (e) {
-      console.warn(
-        "⚠️ Permisos corruptos para rol_id:",
-        usuario.rol_id,
-        e.message
-      );
+      console.warn("⚠️ Permisos corruptos para rol_id:", usuario.rol_id, e.message);
     }
 
     const payload = {
@@ -276,13 +259,17 @@ async function refrescarToken(req, res) {
       permisos,
     };
 
+    registrarEvento("refrescar_token", { exito: true }, { usuario_id: usuario.usuario_id.toString() });
+
     return res.status(200).json({
       message: "Token renovado exitosamente.",
       accessToken: generarAccessToken(payload),
       usuario: payload,
     });
+
   } catch (error) {
     console.error("❌ Error en refrescarToken:", error);
+    registrarEvento("refrescar_token", { exito: false }, { motivo: "token_invalido" });
     return res.status(401).json({ message: "Token inválido o expirado." });
   }
 }
@@ -292,6 +279,8 @@ async function refrescarToken(req, res) {
  * @route POST /auth/logout
  */
 function cerrarSesion(req, res) {
+  registrarEvento("cerrar_sesion", {}, { usuario_id: req.usuario?.usuario_id || "anonimo" });
+
   return res.status(200).json({
     message:
       "Sesión cerrada. El cliente debe eliminar los tokens del almacenamiento local.",
