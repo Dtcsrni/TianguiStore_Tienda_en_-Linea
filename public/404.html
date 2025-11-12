@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="estilo/main.css" />
   <style>
     /* Animación simple para el SVG 404: los dígitos flotan con retrasos */
-    .error-illustration { max-width: 320px; margin: 0 auto 1.5rem; display:block }
+  .error-illustration { width: 320px; max-width: 90%; height: auto; margin: 0 auto 1rem; display:block }
     .digit { transform-origin: center; animation: float 2.2s ease-in-out infinite; }
     .digit.d1 { animation-delay: 0s; }
     .digit.d2 { animation-delay: 0.12s; }
@@ -29,64 +29,131 @@
     /* Pequeñas mejoras de accesibilidad/contraste para el botón */
     .btn-home { background-color: #00796B; color: #fff; }
     /* padding para el main sin usar style inline */
-    #error-main { padding-top: 8vh; }
+  #error-main { padding: 4vh 1rem; flex: 1 0 auto; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0.75rem; }
     /* estilos para textos SVG que antes estaban inline */
     .digit-text { filter: url(#shadow); font-family: 'Helvetica Neue', Arial, sans-serif; }
     /* enlace alternativo */
-    .alt-link { opacity: 0.85; }
+  .alt-link { opacity: 0.85; }
+  .error-title { font-size: 4.5rem; line-height:1; margin: 0; color: #FFC107; font-weight:700; }
+  .error-subtitle { font-size: 1.5rem; margin: 0; color: #FFFFFF; font-weight:600; }
+  .error-desc { color: #cfd8dc; max-width: 720px; text-align:center; margin: 0.25rem 0 0.5rem; }
+  .btn-home { background-color: #00796B; color: #fff; min-width:160px; }
+    /* Visually hidden but available to screen readers */
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    /* Botón animado (usa Animate.css clases junto con versión reducida) */
+    .btn-animated { animation-duration: 1.8s; }
+    /* Robot animation rules */
+    .robot-illustration { width: 360px; max-width: 92%; height: auto; }
+    /* head tilt */
+    #head { transform-origin: 130px 50px; animation: head-tilt 3s ease-in-out infinite; }
+    @keyframes head-tilt {
+      0% { transform: translate(115px,18px) rotate(0deg); }
+      50% { transform: translate(115px,18px) rotate(-6deg); }
+      100% { transform: translate(115px,18px) rotate(0deg); }
+    }
+    /* left arm swings (detached) */
+    #arm-left { transform-origin: 40px 6px; animation: arm-swing 2s ease-in-out infinite; }
+    @keyframes arm-swing { 0% { transform: translate(24px,110px) rotate(-18deg); } 50% { transform: translate(24px,110px) rotate(10deg); } 100% { transform: translate(24px,110px) rotate(-18deg); } }
+    /* right arm trembling */
+    #arm-right { transform-origin: 270px 6px; animation: arm-tremble 1.2s linear infinite; }
+    @keyframes arm-tremble { 0% { transform: translate(270px,110px) rotate(0deg); } 50% { transform: translate(270px,110px) rotate(4deg); } 100% { transform: translate(270px,110px) rotate(0deg); } }
+    /* eye blink */
+    #eye-left, #eye-right { transform-origin: center; animation: eye-blink 4s steps(1) infinite; }
+    @keyframes eye-blink { 0%, 90% { transform: scaleY(1); } 92% { transform: scaleY(0.05);} 100% { transform: scaleY(1);} }
+    /* crack pulse */
+    #crack { stroke-dasharray: 200; stroke-dashoffset: 200; animation: crack-reveal 2.2s ease forwards 0.5s; }
+    @keyframes crack-reveal { to { stroke-dashoffset: 0; } }
   </style>
 </head>
 
 <body class="grey darken-4 white-text d-flex flex-column min-vh-100">
 
   <main id="error-main" class="container center-align animate__animated animate__fadeIn" role="main" aria-labelledby="error-title">
-    <i class="fas fa-exclamation-triangle fa-5x amber-text text-accent-3 mb-3" aria-hidden="true"></i>
-    <h1 class="amber-text text-accent-3" id="error-title">404</h1>
-    <h2 class="white-text">Página no encontrada</h2>
-    <p class="grey-text text-lighten-2 flow-text">
-      Lo sentimos, la página que buscas no existe o fue movida.<br>
-      Intenta navegar desde el inicio o usar el menú principal.
-    </p>
-
-    <!-- Ilustración SVG animada representando el error 404; inline para accesibilidad y sin dependencias -->
-    <svg class="error-illustration" role="img" aria-label="Ilustración 404 - página no encontrada" viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg">
+    <!-- Ilustración animada: robot roto (SVG inline con animaciones CSS) -->
+    <svg class="error-illustration robot-illustration" role="img" aria-label="Ilustración animada robot roto" viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg">
       <defs>
-        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity="0.18"/>
+        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#000" flood-opacity="0.25"/>
         </filter>
       </defs>
-      <!-- Dígitos 4-0-4: cada uno animado con clase .digit -->
-      <g transform="translate(20,20) scale(0.9)">
-  <text class="digit d1 amber-text digit-text" x="0" y="70" font-size="72" font-weight="700" fill="#FFC107">4</text>
-        <g class="digit d2" transform="translate(90,0)">
-          <circle cx="36" cy="36" r="36" fill="#eeeeee" stroke="#cfcfcf" stroke-width="2" />
-          <text x="36" y="52" font-size="48" font-weight="700" text-anchor="middle" fill="#424242" font-family="'Helvetica Neue', Arial, sans-serif">0</text>
+
+      <!-- Body group -->
+      <g id="robot" transform="translate(30,20)" filter="url(#shadow)">
+        <!-- torso -->
+        <rect id="torso" x="60" y="80" width="180" height="110" rx="14" fill="#e0e0e0" stroke="#bdbdbd" stroke-width="3" />
+
+        <!-- crack (rotura) -->
+        <path id="crack" d="M115 110 C130 120, 140 100, 155 118 C170 136, 190 120, 200 132" fill="none" stroke="#b71c1c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+
+        <!-- head (tilt animated) -->
+        <g id="head" transform="translate(115,18)">
+          <rect x="-30" y="0" width="120" height="72" rx="10" fill="#f5f5f5" stroke="#bdbdbd" stroke-width="3" />
+          <!-- left eye (blinking) -->
+          <circle id="eye-left" cx="10" cy="36" r="10" fill="#212121" />
+          <circle id="eye-right" cx="70" cy="36" r="10" fill="#212121" />
+          <!-- antenna broken -->
+          <line x1="20" y1="0" x2="20" y2="-18" stroke="#9e9e9e" stroke-width="3" />
+          <circle cx="20" cy="-22" r="5" fill="#ffca28" />
         </g>
-  <text class="digit d3 amber-text digit-text" x="198" y="70" font-size="72" font-weight="700" fill="#FFC107">4</text>
+
+        <!-- left arm (detached, swinging) -->
+        <g id="arm-left" transform="translate(24,110)">
+          <rect x="-18" y="0" width="28" height="12" rx="4" fill="#cfd8dc" stroke="#9e9e9e" stroke-width="2" />
+          <rect x="-26" y="12" width="40" height="10" rx="4" fill="#cfd8dc" stroke="#9e9e9e" stroke-width="2" />
+        </g>
+
+        <!-- right arm (attached but shaky) -->
+        <g id="arm-right" transform="translate(270,110)">
+          <rect x="-10" y="0" width="28" height="12" rx="4" fill="#cfd8dc" stroke="#9e9e9e" stroke-width="2" />
+          <rect x="-10" y="12" width="40" height="10" rx="4" fill="#cfd8dc" stroke="#9e9e9e" stroke-width="2" />
+        </g>
+
+        <!-- legs -->
+        <g id="legs" transform="translate(100,192)">
+          <rect x="-4" y="0" width="28" height="30" rx="6" fill="#b0bec5" />
+          <rect x="68" y="0" width="28" height="30" rx="6" fill="#b0bec5" />
+        </g>
       </g>
     </svg>
 
-    <h1 class="amber-text text-accent-3" id="error-title">404</h1>
-    <h2 class="white-text">Página no encontrada</h2>
-    <p class="grey-text text-lighten-2 flow-text" id="error-desc">
-      Lo sentimos, la página que buscas no existe o fue movida.<br>
-      Puedes volver a la página de inicio o explorar el sitio desde el menú.
-    </p>
+    <!-- Mensajes visibles -->
+    <h1 id="error-title" class="error-title">404</h1>
+    <h2 class="error-subtitle">Página no encontrada</h2>
+    <p class="error-desc">Lo sentimos, la página que buscas no existe o fue movida. Puedes volver al inicio o explorar el sitio desde el menú.</p>
 
-    <!-- Enlace al inicio (más claro y accesible) -->
-    <a href="/" class="btn-large btn-home waves-effect waves-light mt-3" aria-label="Volver al inicio de TianguiStore">
-      <i class="fas fa-home left" aria-hidden="true"></i> Volver al inicio
+    <!-- Botón animado al inicio -->
+    <a href="/" class="btn-large btn-home btn-animated animate__animated animate__pulse animate__infinite waves-effect waves-light mt-3" aria-label="Volver al inicio de TianguiStore">
+      <i class="fas fa-home left" aria-hidden="true"></i>
+      Volver al inicio
     </a>
-
-    <!-- Enlace alternativo textual (útil si JS/estilos fallan) -->
-    <div class="mt-2">
-  <a href="/index.html" class="white-text alt-link">O abrir la versión clásica del inicio</a>
-    </div>
   </main>
 
-  <!-- Footer opcional -->
-  <footer class="page-footer grey darken-3 mt-auto">
-    <div class="container center-align">
+  <!-- Footer opcional con accesos a redes sociales -->
+  <footer class="page-footer grey darken-3 mt-auto" role="contentinfo">
+    <div class="container center-align" aria-label="Pie de página de TianguiStore">
+      <nav aria-label="Enlaces a redes sociales" class="mb-2">
+        <a href="https://www.facebook.com/tu-pagina" target="_blank" rel="noopener noreferrer" class="grey-text text-lighten-1" aria-label="Facebook de TianguiStore" title="Facebook" style="margin:0 .6rem;">
+          <i class="fab fa-facebook fa-lg" aria-hidden="true"></i>
+          <span class="sr-only">Facebook</span>
+        </a>
+        <a href="https://www.instagram.com/tu-pagina" target="_blank" rel="noopener noreferrer" class="grey-text text-lighten-1" aria-label="Instagram de TianguiStore" title="Instagram" style="margin:0 .6rem;">
+          <i class="fab fa-instagram fa-lg" aria-hidden="true"></i>
+          <span class="sr-only">Instagram</span>
+        </a>
+        <a href="https://twitter.com/tu-pagina" target="_blank" rel="noopener noreferrer" class="grey-text text-lighten-1" aria-label="Twitter de TianguiStore" title="Twitter" style="margin:0 .6rem;">
+          <i class="fab fa-twitter fa-lg" aria-hidden="true"></i>
+          <span class="sr-only">Twitter</span>
+        </a>
+        <a href="https://www.youtube.com/tu-canal" target="_blank" rel="noopener noreferrer" class="grey-text text-lighten-1" aria-label="YouTube de TianguiStore" title="YouTube" style="margin:0 .6rem;">
+          <i class="fab fa-youtube fa-lg" aria-hidden="true"></i>
+          <span class="sr-only">YouTube</span>
+        </a>
+        <a href="https://www.linkedin.com/company/tu-empresa" target="_blank" rel="noopener noreferrer" class="grey-text text-lighten-1" aria-label="LinkedIn de TianguiStore" title="LinkedIn" style="margin:0 .6rem;">
+          <i class="fab fa-linkedin fa-lg" aria-hidden="true"></i>
+          <span class="sr-only">LinkedIn</span>
+        </a>
+      </nav>
+
       <small class="grey-text text-lighten-1">TianguiStore © 2025</small>
     </div>
   </footer>
