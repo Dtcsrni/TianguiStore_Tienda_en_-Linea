@@ -14,11 +14,32 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" crossorigin="anonymous" />
   <!-- Estilos personalizados -->
   <link rel="stylesheet" href="estilo/main.css" />
+  <style>
+    /* Animación simple para el SVG 404: los dígitos flotan con retrasos */
+    .error-illustration { max-width: 320px; margin: 0 auto 1.5rem; display:block }
+    .digit { transform-origin: center; animation: float 2.2s ease-in-out infinite; }
+    .digit.d1 { animation-delay: 0s; }
+    .digit.d2 { animation-delay: 0.12s; }
+    .digit.d3 { animation-delay: 0.24s; }
+    @keyframes float {
+      0% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(-2deg); }
+      100% { transform: translateY(0) rotate(0deg); }
+    }
+    /* Pequeñas mejoras de accesibilidad/contraste para el botón */
+    .btn-home { background-color: #00796B; color: #fff; }
+    /* padding para el main sin usar style inline */
+    #error-main { padding-top: 8vh; }
+    /* estilos para textos SVG que antes estaban inline */
+    .digit-text { filter: url(#shadow); font-family: 'Helvetica Neue', Arial, sans-serif; }
+    /* enlace alternativo */
+    .alt-link { opacity: 0.85; }
+  </style>
 </head>
 
 <body class="grey darken-4 white-text d-flex flex-column min-vh-100">
 
-  <main class="container center-align animate__animated animate__fadeIn" role="main" aria-labelledby="error-title" style="padding-top: 10vh;">
+  <main id="error-main" class="container center-align animate__animated animate__fadeIn" role="main" aria-labelledby="error-title">
     <i class="fas fa-exclamation-triangle fa-5x amber-text text-accent-3 mb-3" aria-hidden="true"></i>
     <h1 class="amber-text text-accent-3" id="error-title">404</h1>
     <h2 class="white-text">Página no encontrada</h2>
@@ -27,9 +48,40 @@
       Intenta navegar desde el inicio o usar el menú principal.
     </p>
 
-    <a href="/index.html" class="btn-large teal lighten-1 waves-effect waves-light mt-3" aria-label="Volver al inicio">
-      <i class="fas fa-home left"></i> Ir al inicio
+    <!-- Ilustración SVG animada representando el error 404; inline para accesibilidad y sin dependencias -->
+    <svg class="error-illustration" role="img" aria-label="Ilustración 404 - página no encontrada" viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity="0.18"/>
+        </filter>
+      </defs>
+      <!-- Dígitos 4-0-4: cada uno animado con clase .digit -->
+      <g transform="translate(20,20) scale(0.9)">
+  <text class="digit d1 amber-text digit-text" x="0" y="70" font-size="72" font-weight="700" fill="#FFC107">4</text>
+        <g class="digit d2" transform="translate(90,0)">
+          <circle cx="36" cy="36" r="36" fill="#eeeeee" stroke="#cfcfcf" stroke-width="2" />
+          <text x="36" y="52" font-size="48" font-weight="700" text-anchor="middle" fill="#424242" font-family="'Helvetica Neue', Arial, sans-serif">0</text>
+        </g>
+  <text class="digit d3 amber-text digit-text" x="198" y="70" font-size="72" font-weight="700" fill="#FFC107">4</text>
+      </g>
+    </svg>
+
+    <h1 class="amber-text text-accent-3" id="error-title">404</h1>
+    <h2 class="white-text">Página no encontrada</h2>
+    <p class="grey-text text-lighten-2 flow-text" id="error-desc">
+      Lo sentimos, la página que buscas no existe o fue movida.<br>
+      Puedes volver a la página de inicio o explorar el sitio desde el menú.
+    </p>
+
+    <!-- Enlace al inicio (más claro y accesible) -->
+    <a href="/" class="btn-large btn-home waves-effect waves-light mt-3" aria-label="Volver al inicio de TianguiStore">
+      <i class="fas fa-home left" aria-hidden="true"></i> Volver al inicio
     </a>
+
+    <!-- Enlace alternativo textual (útil si JS/estilos fallan) -->
+    <div class="mt-2">
+  <a href="/index.html" class="white-text alt-link">O abrir la versión clásica del inicio</a>
+    </div>
   </main>
 
   <!-- Footer opcional -->
