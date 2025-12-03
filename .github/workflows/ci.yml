@@ -9,10 +9,10 @@ on:
       - main
 
 jobs: 
-  backend-tests:
+  syntax-validation:
+    name: Validación de sintaxis HTML y JavaScript
     runs-on: ubuntu-latest
 
-    #Todos los comandos 'run' se ejecutaran dentro de la carpeta backend
     defaults:
       run:
         working-directory: backend
@@ -20,14 +20,56 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '22.0.0'
-      - name: Instalar depencias
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+          
+      - name: Instalar dependencias
+        run: npm ci || npm install
+
+      - name: Validar sintaxis HTML
+        run: npm run test:html
+        continue-on-error: false
+
+      - name: Validar sintaxis JavaScript
+        run: npm run test:js
+        continue-on-error: false
+
+      - name: Ejecutar todas las validaciones de sintaxis
+        run: npm run test
+        continue-on-error: false
+
+  backend-tests:
+    name: Tests del backend
+    runs-on: ubuntu-latest
+    needs: syntax-validation
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.0.0'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+          
+      - name: Instalar dependencias
         run: npm ci || npm install
 
       - name: Ejecutar pruebas
-        run: npm test -if-present
+        run: npm test
+        continue-on-error: false
       
+     
+
      
