@@ -26,7 +26,12 @@
     "update:all": "npm update",
     "lint": "eslint . --fix",
     "format": "prettier --write .",
-    "install:progress": "node install-with-progress.js"
+    "install:progress": "node install-with-progress.js",
+    "test": "node test/run-syntax-validation.js",
+    "test:html": "node test/validate-html.js",
+    "test:js": "node test/validate-javascript.js",
+    "test:syntax": "node --test test/validate-syntax.test.js",
+    "validate": "npm run test"
   },
   "keywords": [
     "tianguistore",
