@@ -16,8 +16,8 @@
     "node": ">=22.0.0"
   },
   "scripts": {
-    "start": "NODE_ENV=production node backend/server.js",
-    "dev": "nodemon backend/server.js",
+    "start": "node server.js",
+    "dev": "nodemon server.js",
     "build:css": "lessc public/estilo/main.less public/estilo/main.css",
     "watch:css": "nodemon --watch public/estilo/main.less --exec \"npm run build:css\"",
     "setup": "npm install && npm run install:materialize && npm run build:css",
@@ -69,7 +69,7 @@
     "eslint": "^9.26.0",
     "eslint-config-prettier": "^8.3.0",
     "eslint-plugin-prettier": "^4.0.0",
-    "less": "^4.3.0",
+    "less": "^4.4.2",
     "prettier": "^3.5.3"
   },
   "sideEffects": false
