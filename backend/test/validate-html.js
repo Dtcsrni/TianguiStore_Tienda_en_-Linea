@@ -87,12 +87,16 @@ async function validateAllHTML() {
       hasErrors = true;
       console.log(`❌ ${relativePath}`);
       
-      report.results.forEach(result => {
-        result.messages.forEach(msg => {
+      // report.results puede ser undefined en algunas versiones, usar report directamente
+      const results = report.results || [report];
+      
+      results.forEach(result => {
+        const messages = result.messages || [];
+        messages.forEach(msg => {
           const errorInfo = {
             file: relativePath,
-            line: msg.line,
-            column: msg.column,
+            line: msg.line || 1,
+            column: msg.column || 1,
             message: msg.message,
             ruleId: msg.ruleId,
             severity: msg.severity
@@ -100,7 +104,7 @@ async function validateAllHTML() {
           
           allErrors.push(errorInfo);
           
-          console.log(`   Línea ${msg.line}:${msg.column} - ${msg.message} [${msg.ruleId}]`);
+          console.log(`   Línea ${msg.line || 1}:${msg.column || 1} - ${msg.message} [${msg.ruleId || 'error'}]`);
         });
       });
       console.log('');
