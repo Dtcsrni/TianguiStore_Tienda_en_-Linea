@@ -1,8 +1,6 @@
-#!/usr/bin/env node
 /**
  * Script principal de validación de sintaxis
  * Ejecuta todas las validaciones de HTML y JavaScript
- * @module test/run-syntax-validation
  */
 
 const { validateAllHTML } = require('./validate-html');
