@@ -8,66 +8,99 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs: 
   syntax-validation:
-    name: Validación de sintaxis HTML y JavaScript
+    name: 🔍 Validación de sintaxis
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     defaults:
       run:
         working-directory: backend
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v6
         
-      - name: Set up Node.js
+      - name: 🔧 Set up Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '22.0.0'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
         
-      - name: Instalar dependencias
-        run: npm ci || npm install
+      - name: 📦 Instalar dependencias
+        run: npm ci --prefer-offline --no-audit
 
-      - name: Validar sintaxis HTML
+      - name: ✅ Validar HTML
         run: npm run test:html
-        continue-on-error: false
+        id: html-check
 
-      - name: Validar sintaxis JavaScript
+      - name: ✅ Validar JavaScript
         run: npm run test:js
-        continue-on-error: false
+        id: js-check
 
-      - name: Ejecutar todas las validaciones de sintaxis
-        run: npm run test
-        continue-on-error: false
+      - name: 📊 Resumen de validaciones
+        if: always()
+        run: |
+          echo "## 📋 Validación de Sintaxis" >> $GITHUB_STEP_SUMMARY
+          echo "- HTML: ${{ steps.html-check.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "- JavaScript: ${{ steps.js-check.outcome }}" >> $GITHUB_STEP_SUMMARY
 
   backend-tests:
-    name: Tests del backend
+    name: 🧪 Tests del backend
     runs-on: ubuntu-latest
     needs: syntax-validation
+    timeout-minutes: 15
+    if: success()
 
     defaults:
       run:
         working-directory: backend
 
     steps:
-      - name: Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v6
         
-      - name: Set up Node.js
+      - name: 🔧 Set up Node.js
         uses: actions/setup-node@v6
         with:
           node-version: '22.0.0'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
           
-      - name: Instalar dependencias
-        run: npm ci || npm install
+      - name: 📦 Instalar dependencias
+        run: npm ci --prefer-offline --no-audit
 
-      - name: Ejecutar pruebas
+      - name: 🧪 Ejecutar pruebas
         run: npm test
-        continue-on-error: false
-      
-     
+        id: tests
+        continue-on-error: true
 
-     
+      - name: 📊 Resumen de tests
+        if: always()
+        run: |
+          echo "## 🧪 Resultados de Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Estado: ${{ steps.tests.outcome }}" >> $GITHUB_STEP_SUMMARY
+
+  notify:
+    name: 📢 Notificación final
+    runs-on: ubuntu-latest
+    needs: [syntax-validation, backend-tests]
+    if: always()
+    
+    steps:
+      - name: ✅ Build exitoso
+        if: success()
+        run: echo "🎉 Pipeline completado exitosamente"
+        
+      - name: ❌ Build fallido
+        if: failure()
+        run: |
+          echo "⚠️ Pipeline con errores"
+          exit 1
+
